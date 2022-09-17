@@ -7,7 +7,7 @@ use actix_service::{forward_ready, Service, Transform};
 use actix_web::{HttpMessage, HttpResponse};
 use actix_web::body::MessageBody;
 use actix_web::dev::{Response, ServiceRequest, ServiceResponse};
-use actix_web::http::header::{EntityTag, IfNoneMatch, TryIntoHeaderPair, TryIntoHeaderValue};
+use actix_web::http::header::{Header, EntityTag, IfNoneMatch, TryIntoHeaderPair, TryIntoHeaderValue};
 use actix_web::web::Bytes;
 use futures::{
     future::{ok, Ready},
