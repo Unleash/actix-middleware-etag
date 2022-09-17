@@ -1,0 +1,13 @@
+[package]
+name = "actix-middleware-etag"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-service = "2.0.2"
+actix-web =  "4.2.1"
+base64 = "0.13.0"
+futures = "0.3.24"
+xxhash-rust = { version = "0.8.5", features =["xxh3"] }
