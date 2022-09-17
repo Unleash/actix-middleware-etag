@@ -23,7 +23,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with: { command: generate-lockfile }
       - name: Cache Dependencies
-        uses: Swatinem/rust-cache@2
+        uses: Swatinem/rust-cache@v2
       - name: Test
         timeout-minutes: 10
         run: |
