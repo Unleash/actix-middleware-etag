@@ -5,9 +5,9 @@ use std::pin::Pin;
 
 use actix_service::{forward_ready, Service, Transform};
 use actix_web::{HttpMessage, HttpResponse};
-use actix_web::body::MessageBody;
-use actix_web::dev::{Response, ServiceRequest, ServiceResponse};
-use actix_web::http::header::{Header, EntityTag, IfNoneMatch, TryIntoHeaderPair, TryIntoHeaderValue};
+use actix_web::body::{EitherBody, MessageBody};
+use actix_web::dev::{ServiceRequest, ServiceResponse};
+use actix_web::http::header::{EntityTag, IfNoneMatch, TryIntoHeaderPair, TryIntoHeaderValue};
 use actix_web::web::Bytes;
 use futures::{
     future::{ok, Ready},
@@ -23,7 +23,7 @@ impl<S, B> Transform<S, ServiceRequest> for Etag
           S::Future: 'static,
           B: MessageBody + 'static
 {
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse<EitherBody<B>>;
     type Error = actix_web::Error;
     type Transform = EtagMiddleware<S>;
     type InitError = ();
@@ -43,10 +43,10 @@ impl<S, B> Service<ServiceRequest> for EtagMiddleware<S>
           S::Future: 'static,
           B: MessageBody + 'static
 {
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse<EitherBody<B>>;
     type Error = actix_web::Error;
     #[allow(clippy::type_complexity)]
-    type Future = Pin<Box<dyn Future<Output=Result<Self::Response, Self::Error>>>>;
+    type Future = Pin<Box<dyn Future<Output=Result<ServiceResponse<EitherBody<B>>, Self::Error>>>>;
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
@@ -55,20 +55,19 @@ impl<S, B> Service<ServiceRequest> for EtagMiddleware<S>
 
         Box::pin(async move {
             let res = fut.await?;
-
             let mut payload = None;
-            let mut res = res.map_body(|h, b| {
-                payload = Some(b.try_into_bytes().unwrap_or_else(|_| Bytes::new()));
-                b
+            let mut res = res.map_body(|_h, body| {
+                payload = Some(body.try_into_bytes().unwrap_or_else(|_| Bytes::new()));
+                body
             });
             let payload = if let Some(payload) = payload {
                 if payload.is_empty() {
-                    return Ok(res);
+                    return Ok(res.map_into_left_body());
                 } else {
                     payload
                 }
             } else {
-                return Ok(res);
+                return Ok(res.map_into_left_body());
             };
 
             let response_hash = xxh3_128(&payload);
@@ -80,8 +79,8 @@ impl<S, B> Service<ServiceRequest> for EtagMiddleware<S>
                     if let Ok(request_etag_string) = request_etag.to_str() {
                         let request_etag_string = request_etag_string.replace("W/", "").replace("\"", "");
                         if request_etag_string == base64_response_hash.as_str() || request_etag_string == "*" {
-                            let not_modified = res.into_response(HttpResponse::NotModified().finish());
-                            return Ok(not_modified);
+                            let not_modified: ServiceResponse = res.into_response(HttpResponse::NotModified().finish());
+                            return Ok(not_modified.map_into_right_body());
                         }
                     }
                 }
@@ -91,7 +90,7 @@ impl<S, B> Service<ServiceRequest> for EtagMiddleware<S>
                 res.headers_mut().insert(name, value);
             }
 
-            Ok(res)
+            Ok(res.map_into_left_body())
         })
     }
 }
