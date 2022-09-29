@@ -1,15 +1,17 @@
 #![deny(missing_docs)]
 #![deny(unsafe_code)]
-//! ETags for Actix web
+//! # Actix Middleware - ETag
 //!
 //! To avoid sending unnecessary bodies downstream, this middleware handles comparing If-None-Match headers
 //! to the calculated hash of the body of the GET request.
-//! Inspired by Node's express framework and how it does ETag calculation, this middleware behaves in a similar fashion.
+//! Inspired by Node's [express framework](http://expressjs.com/en/api.html#etag.options.table) and how it does ETag calculation, this middleware behaves in a similar fashion.
 //!
-//! First hash the resulting body; then base64 encode the hash and set this as the ETag header for the GET request.
+//! First hash the resulting body, then base64 encode the hash and set this as the ETag header for the GET request.
 //!
 //! This does not save CPU resources on server side, since the body is still being calculated.
-
+//!
+//! Beware: This middleware does not look at headers, so if you need to refresh your headers even if body is exactly the same, use something else
+//! (or better yet, add a PR on this repo adding a sane way to adhere to headers as well)
 use std::pin::Pin;
 
 use actix_service::{forward_ready, Service, Transform};
