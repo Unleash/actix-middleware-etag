@@ -1,9 +1,12 @@
 [package]
 name = "actix-middleware-etag"
+description = "ETag middleware for Actix web >= 4.1"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+repository = "https://github.com/chriswk/actix-middleware-etag"
+homepage = "https://github.com/chriswk/actix-middleware-etag"
+authors = ["Christopher Kolstad <git@chriswk.no>"]
+license = "MIT"
 
 [dependencies]
 actix-service = "2.0.2"
