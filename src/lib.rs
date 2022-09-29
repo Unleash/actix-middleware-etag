@@ -1,20 +1,50 @@
 #![deny(missing_docs)]
 #![deny(unsafe_code)]
+//! ETags for Actix web
+//!
+//! To avoid sending unnecessary bodies downstream, this middleware handles comparing If-None-Match headers
+//! to the calculated hash of the body of the GET request.
+//! Inspired by Node's express framework and how it does ETag calculation, this middleware behaves in a similar fashion.
+//!
+//! First hash the resulting body; then base64 encode the hash and set this as the ETag header for the GET request.
+//!
+//! This does not save CPU resources on server side, since the body is still being calculated.
 
 use std::pin::Pin;
 
 use actix_service::{forward_ready, Service, Transform};
 use actix_web::{HttpMessage, HttpResponse};
-use actix_web::body::{EitherBody, MessageBody};
+use actix_web::body::{BodySize, BoxBody, EitherBody, MessageBody};
 use actix_web::dev::{ServiceRequest, ServiceResponse};
-use actix_web::http::header::{EntityTag, IfNoneMatch, TryIntoHeaderPair, TryIntoHeaderValue};
+use actix_web::http::header::{EntityTag, ETag, IfNoneMatch, TryIntoHeaderPair};
+use actix_web::http::Method;
 use actix_web::web::Bytes;
-use futures::{
-    future::{ok, Ready},
-    Future,
-};
+use futures::{future::{ok, Ready}, Future};
 use xxhash_rust::xxh3::xxh3_128;
 
+///
+/// This should be loaded as the last middleware, as in, first among the wraps.
+/// Actix loads middlewares in bottom up fashion, and we want to have the resulting body from processing the entire request
+
+/// # Examples
+/// ```no_run
+/// use actix_web::{web, App, HttpServer, HttpResponse, Error};
+/// use actix_middleware_etag::{Etag};
+///
+/// // The secret key would usually be read from a configuration file/environment variables.
+///
+/// #[actix_web::main]
+/// async fn main() -> std::io::Result<()> {
+///     HttpServer::new(move ||
+///             App::new()
+///             // Add session management to your application using Redis for session state storage
+///             .wrap(Etag::default())
+///             .default_service(web::to(|| HttpResponse::Ok())))
+///         .bind(("127.0.0.1", 8080))?
+///         .run()
+///         .await
+/// }
+/// ```
 #[derive(Debug, Default)]
 pub struct Etag;
 
@@ -23,7 +53,7 @@ impl<S, B> Transform<S, ServiceRequest> for Etag
           S::Future: 'static,
           B: MessageBody + 'static
 {
-    type Response = ServiceResponse<EitherBody<B>>;
+    type Response = ServiceResponse<EitherBody<BoxBody>>;
     type Error = actix_web::Error;
     type Transform = EtagMiddleware<S>;
     type InitError = ();
@@ -34,6 +64,8 @@ impl<S, B> Transform<S, ServiceRequest> for Etag
     }
 }
 
+///
+/// The service holder for the transform that should happen
 pub struct EtagMiddleware<S> {
     service: S,
 }
@@ -43,54 +75,63 @@ impl<S, B> Service<ServiceRequest> for EtagMiddleware<S>
           S::Future: 'static,
           B: MessageBody + 'static
 {
-    type Response = ServiceResponse<EitherBody<B>>;
+    type Response = ServiceResponse<EitherBody<BoxBody>>;
     type Error = actix_web::Error;
     #[allow(clippy::type_complexity)]
-    type Future = Pin<Box<dyn Future<Output=Result<ServiceResponse<EitherBody<B>>, Self::Error>>>>;
+    type Future = Pin<Box<dyn Future<Output=Result<ServiceResponse<EitherBody<BoxBody>>, Self::Error>>>>;
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
         let request_etag_header: Option<IfNoneMatch> = req.get_header();
+        let method = req.method().clone();
         let fut = self.service.call(req);
 
         Box::pin(async move {
-            let res = fut.await?;
-            let mut payload = None;
-            let mut res = res.map_body(|_h, body| {
-                payload = Some(body.try_into_bytes().unwrap_or_else(|_| Bytes::new()));
-                body
-            });
-            let payload = if let Some(payload) = payload {
-                if payload.is_empty() {
-                    return Ok(res.map_into_left_body());
-                } else {
-                    payload
-                }
-            } else {
-                return Ok(res.map_into_left_body());
-            };
-
-            let response_hash = xxh3_128(&payload);
-
-            let base64_response_hash = base64::encode(response_hash.to_le_bytes());
-
-            if let Some(request_etag_header) = request_etag_header {
-                if let Ok(request_etag) = request_etag_header.try_into_value() {
-                    if let Ok(request_etag_string) = request_etag.to_str() {
-                        let request_etag_string = request_etag_string.replace("W/", "").replace("\"", "");
-                        if request_etag_string == base64_response_hash.as_str() || request_etag_string == "*" {
-                            let not_modified: ServiceResponse = res.into_response(HttpResponse::NotModified().finish());
-                            return Ok(not_modified.map_into_right_body());
+            let res: ServiceResponse<B> = fut.await?;
+            match method {
+                Method::GET => {
+                    let mut modified = true;
+                    let mut payload: Option<Bytes> = None;
+                    let mut res = res.map_body(|_h, body| {
+                        match body.size() {
+                            BodySize::Sized(_size) => {
+                                let bytes = body.try_into_bytes().unwrap_or_else(|_| Bytes::new());
+                                payload = Some(bytes.clone());
+                                bytes.clone().boxed()
+                            }
+                            _ => body.boxed()
                         }
+                    });
+
+                    match payload {
+                        Some(bytes) => {
+                            let response_hash = xxh3_128(&bytes);
+                            let base64_response_hash = base64::encode(response_hash.to_le_bytes());
+                            let tag = EntityTag::new_weak(base64_response_hash.clone());
+
+                            if let Some(request_etag_header) = request_etag_header {
+                                if request_etag_header == IfNoneMatch::Any || request_etag_header.to_string() == tag.to_string() {
+                                    modified = false
+                                }
+                            }
+                            if modified {
+                                if let Ok((name, value)) = ETag(tag.clone()).try_into_pair() {
+                                    res.headers_mut().insert(name, value);
+                                }
+                            }
+                        }
+                        None => {}
                     }
+
+
+                    Ok(match modified {
+                        false => res.into_response(HttpResponse::NotModified().finish()).map_into_right_body(),
+                        true => res.map_into_left_body()
+                    })
+
                 }
+                _ => Ok(res.map_into_boxed_body().map_into_left_body())
             }
-
-            if let Ok((name, value)) = actix_web::http::header::ETag(EntityTag::new_weak(base64_response_hash)).try_into_pair() {
-                res.headers_mut().insert(name, value);
-            }
-
-            Ok(res.map_into_left_body())
         })
     }
 }
@@ -100,14 +141,19 @@ mod tests {
     use std::io::Read;
 
     use actix_service::IntoService;
-    use actix_web::{
-        App,
-        http::StatusCode,
-        test::{call_service, init_service, TestRequest}, web,
-    };
-    use actix_web::http::header::{EntityTag, HeaderName, IF_NONE_MATCH};
-
+    use actix_web::{App, http::StatusCode, Responder, test::{call_service, init_service, TestRequest}, web};
+    use actix_web::http::header::{EntityTag, ETag, Header, HeaderName};
     use super::*;
+
+    async fn index() -> impl Responder {
+        HttpResponse::Ok().body("abcd")
+    }
+
+    async fn image() -> impl Responder {
+        HttpResponse::Ok()
+            .content_type("image/png")
+            .body(&include_bytes!("assets/favicon.ico")[..])
+    }
 
     #[actix_web::test]
     async fn test_generates_etag() {
@@ -115,7 +161,7 @@ mod tests {
             ok(req.into_response(HttpResponse::build(StatusCode::OK).body("abc")))
         };
         let etag_service = Etag::default();
-        let mut srv = etag_service
+        let srv = etag_service
             .new_transform(srv.into_service())
             .await
             .unwrap();
@@ -129,7 +175,7 @@ mod tests {
             let etag = headers.get(etag);
             assert_eq!(
                 etag.unwrap().to_str().unwrap(),
-                "W/\"UDkviZRfr3iFYTpztlqwBg==\""
+                r#"W/"UDkviZRfr3iFYTpztlqwBg==""#
             );
         } else {
             panic!("No response was generated!");
@@ -137,15 +183,17 @@ mod tests {
     }
 
     #[actix_web::test]
-    async fn test_if_none_matched_generates_not_modified() {
-        let mut app = init_service(App::new().wrap(Etag::default()).service(web::resource("/").to(|| HttpResponse::Ok().body("abc"))),
+    async fn test_any_data_matches_wildcard_etag() {
+        let mut app = init_service(
+            App::new()
+                .wrap(Etag::default())
+                .route("/", web::get().to(index))
         ).await;
-        let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak("W/\"UDkviZRfr3iFYTpztlqwBg==\"".to_string())]).try_into_pair();
+
+        let match_header = IfNoneMatch::Any;
         let req = TestRequest::default().append_header(match_header).to_request();
         let res = call_service(&mut app, req).await;
-        assert_eq!(res.status(), StatusCode::NOT_MODIFIED);
-        let etag = actix_web::http::header::ETag::parse(&res).unwrap();
-        assert_eq!(etag, None);
+        assert_eq!(res.status(), StatusCode::NOT_MODIFIED)
     }
 
     #[actix_web::test]
@@ -153,15 +201,14 @@ mod tests {
         let mut app = init_service(
             App::new()
                 .wrap(Etag::default())
-                .service(web::resource("/").to(|| HttpResponse::Ok().body("abcd"))),
-        )
-            .await;
-        let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak("W/\"UDkviZRfr3iFYTpztlqwBg==\"".to_string())]).try_into_pair();
+                .route("/", web::get().to(index))
+        ).await;
+        let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak("UDkviZRfr3iFYTpztlqwBg==".to_string())]);
         let req = TestRequest::default().append_header(match_header).to_request();
         let res = call_service(&mut app, req).await;
+        let etag = res.headers().get(ETag::name()).unwrap();
+        assert_eq!(etag.to_str().unwrap(), r#"W/"PTWx0eye5xvCkPo9OGBrjQ==""#);
         assert!(res.status().is_success());
-        let etag = actix_web::http::header::ETag::parse(&res).unwrap();
-        assert_eq!(etag.to_string(), "W/\"PTWx0eye5xvCkPo9OGBrjQ==\"")
     }
 
     #[actix_web::test]
@@ -169,56 +216,57 @@ mod tests {
         let mut app = init_service(
             App::new()
                 .wrap(Etag::default())
-                .service(web::resource("/").to(|| HttpResponse::Ok().body("abcd"))),
-        )
-            .await;
-        let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak("W/\"UDkviZRfr3iFYTpztlqwBg==\"".to_string())]).try_into_pair();
+                .route("/", web::get().to(index))
+        ).await;
+        let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak("UDkviZRfr3iFYTpztlqwBg==".to_string())]);
         let req = TestRequest::default().append_header(match_header).to_request();
         let res = call_service(&mut app, req).await;
         assert!(res.status().is_success());
         let body = res.into_body();
-        let body = body.as_ref().unwrap();
-        let example = web::BytesMut::from("abcd");
-        assert_eq!(example.bytes(), body);
+        let body: Bytes = body.try_into_bytes().unwrap();
+        let example: Bytes = Bytes::from("abcd");
+        assert!(example.bytes().zip(body).all(|(a, b)| a.unwrap() == b));
     }
 
     #[actix_web::test]
     async fn test_favicon_generates_correct_status_coded_on_etag_match() {
-        init_service(App::new().wrap(Etag::default()).service(
-            web::resource("/").to(|| {
-                HttpResponse::Ok()
-                    .content_type("image/png")
-                    .body(&include_bytes!("../../assets/favicon.ico")[..])
-            }),
-        ))
+        let mut app = init_service(
+            App::new()
+                .wrap(Etag::default())
+                .route("/", web::get().to(image)))
             .await;
-        let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak("W/\"qNoeBNlNgCaLddIJcyev5A==\"".to_string())]).try_into_pair();
+        let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak("m0RKLkLoLS6kJ1N8xt0D5A==".to_string())]);
         let req = TestRequest::default().append_header(match_header).to_request();
         let res = call_service(&mut app, req).await;
         assert_eq!(res.status(), StatusCode::NOT_MODIFIED);
+        assert_eq!(res.into_body().size(), BodySize::Sized(0));
     }
 
     #[actix_web::test]
     async fn test_favicon_data_works() {
-        let mut app = init_service(App::new().wrap(Etag::default()).service(
-            web::resource("/").to(|| {
-                HttpResponse::Ok()
-                    .content_type("image/png")
-                    .body(&include_bytes!("../../assets/favicon.ico")[..])
-            }),
-        ))
+        let mut app = init_service(App::new()
+            .wrap(Etag::default())
+            .route("/", web::get().to(image)))
             .await;
 
-        let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak("W/\"UDkviZRfr3iFYTpztlqwBg==\"".to_string())]).try_into_pair();
+        let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak("UDkviZRfr3iFYTpztlqwBg==".to_string())]);
         let req = TestRequest::default().append_header(match_header).to_request();
         let res = call_service(&mut app, req).await;
 
+        let etag = res.headers().get(ETag::name()).unwrap();
+        assert_eq!(etag.to_str().unwrap(), r#"W/"m0RKLkLoLS6kJ1N8xt0D5A==""#)
+    }
 
-        assert!(res.status().is_success());
-        let body = res.into_body();
-        let body = body.as_ref().unwrap();
-        assert_eq!(web::BytesMut::from(&include_bytes!("../assets/favicon.ico")[..]), body);
-        let etag = actix_web::http::header::ETag::parse(&res).unwrap();
-        assert_eq!(etag.to_string(), "W/\"qNoeBNlNgCaLddIJcyev5A==\"")
+    #[actix_web::test]
+    async fn does_not_add_etag_header_to_post_request() {
+        let mut app = init_service(App::new()
+            .wrap(Etag::default())
+            .route("/", web::post().to(image)))
+            .await;
+
+        let req = TestRequest::default().method(Method::POST).to_request();
+        let res = call_service(&mut app, req).await;
+
+        assert_eq!(res.headers().get(ETag::name()), None)
     }
 }
