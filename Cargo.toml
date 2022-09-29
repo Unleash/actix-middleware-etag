@@ -1,7 +1,7 @@
 [package]
 name = "actix-middleware-etag"
 description = "ETag middleware for Actix web >= 4.1"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 repository = "https://github.com/chriswk/actix-middleware-etag"
 homepage = "https://github.com/chriswk/actix-middleware-etag"
@@ -10,7 +10,10 @@ license = "MIT"
 
 [dependencies]
 actix-service = "2.0.2"
-actix-web =  "4.2.1"
+actix-web = { version = "4.2.1", default-features = false }
 base64 = "0.13.0"
 futures = "0.3.24"
-xxhash-rust = { version = "0.8.5", features =["xxh3"] }
+xxhash-rust = { version = "0.8.5", features = ["xxh3"] }
+
+[dev-dependencies]
+actix-web = { version = "4.2.1", default-features = false, features = ["macros"] }
