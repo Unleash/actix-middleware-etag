@@ -5,7 +5,7 @@ version = "0.1.0"
 edition = "2021"
 repository = "https://github.com/chriswk/actix-middleware-etag"
 homepage = "https://github.com/chriswk/actix-middleware-etag"
-authors = ["Christopher Kolstad <git@chriswk.no>"]
+authors = ["Christopher Kolstad <rust@chriswk.no>"]
 license = "MIT"
 
 [dependencies]
