@@ -25,7 +25,7 @@ use futures::{future::{ok, Ready}, Future};
 use xxhash_rust::xxh3::xxh3_128;
 
 ///
-/// This should be loaded as the last middleware, as in, first among the wraps.
+/// This should be loaded as the last middleware, as in, first in the sequence of wrap()
 /// Actix loads middlewares in bottom up fashion, and we want to have the resulting body from processing the entire request
 
 /// # Examples
@@ -33,13 +33,12 @@ use xxhash_rust::xxh3::xxh3_128;
 /// use actix_web::{web, App, HttpServer, HttpResponse, Error};
 /// use actix_middleware_etag::{Etag};
 ///
-/// // The secret key would usually be read from a configuration file/environment variables.
 ///
 /// #[actix_web::main]
 /// async fn main() -> std::io::Result<()> {
 ///     HttpServer::new(move ||
 ///             App::new()
-///             // Add session management to your application using Redis for session state storage
+///             // Add etag headers to your actix application. Calculating the hash of your GET bodies and putting the base64 hash in the ETag header
 ///             .wrap(Etag::default())
 ///             .default_service(web::to(|| HttpResponse::Ok())))
 ///         .bind(("127.0.0.1", 8080))?
