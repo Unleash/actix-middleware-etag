@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.2.0 (2023-02-01)
 
+### Chore
+
+ - <csr-id-ace591e23b0ee4b31054090bd15aa2782d1e2cbf/> Added changelog
+
 ### New Features
 
  - <csr-id-fe10145fa730d9c45deb7e05c594ad5760b9761a/> now includes content length in etag
@@ -15,9 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 1 commit contributed to the release.
+ - 3 commits contributed to the release.
  - 125 days passed between releases.
- - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -27,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Added changelog ([`ace591e`](https://github.com/chriswk/actix-middleware-etag/commit/ace591e23b0ee4b31054090bd15aa2782d1e2cbf))
+    - Release actix-middleware-etag v0.2.0 ([`7dc14e6`](https://github.com/chriswk/actix-middleware-etag/commit/7dc14e68c542dba9b83588707afa4780aadd5c71))
     - now includes content length in etag ([`fe10145`](https://github.com/chriswk/actix-middleware-etag/commit/fe10145fa730d9c45deb7e05c594ad5760b9761a))
 </details>
 
