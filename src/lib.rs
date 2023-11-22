@@ -15,7 +15,7 @@
 use std::pin::Pin;
 
 use actix_service::{forward_ready, Service, Transform};
-use actix_web::body::{BodySize, BoxBody, EitherBody, MessageBody};
+use actix_web::body::{BodySize, BoxBody, EitherBody, MessageBody, None as BodyNone};
 use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::http::header::{ETag, EntityTag, IfNoneMatch, TryIntoHeaderPair};
 use actix_web::http::Method;
@@ -135,7 +135,7 @@ where
 
                     Ok(match modified {
                         false => res
-                            .into_response(HttpResponse::NotModified().finish())
+                            .into_response(HttpResponse::NotModified().body(BodyNone::new()))
                             .map_into_right_body(),
                         true => res.map_into_left_body(),
                     })
@@ -271,7 +271,7 @@ mod tests {
             .to_request();
         let res = call_service(&mut app, req).await;
         assert_eq!(res.status(), StatusCode::NOT_MODIFIED);
-        assert_eq!(res.into_body().size(), BodySize::Sized(0));
+        assert_eq!(res.into_body().size(), BodySize::None);
     }
 
     #[actix_web::test]
