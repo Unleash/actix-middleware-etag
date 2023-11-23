@@ -22,7 +22,7 @@ use actix_web::http::Method;
 use actix_web::web::Bytes;
 use actix_web::{HttpMessage, HttpResponse};
 use base64::Engine;
-use core::fmt::{self, Write};
+use core::fmt::{Write};
 use futures::{
     future::{ok, Ready},
     Future,
