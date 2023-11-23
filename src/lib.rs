@@ -22,11 +22,13 @@ use actix_web::http::Method;
 use actix_web::web::Bytes;
 use actix_web::{HttpMessage, HttpResponse};
 use base64::Engine;
-use core::fmt::{self, Write};
+use core::fmt::Write;
 use futures::{
     future::{ok, Ready},
     Future,
 };
+use std::convert::Infallible;
+use std::task::{Context, Poll};
 use xxhash_rust::xxh3::xxh3_128;
 
 ///
@@ -54,6 +56,24 @@ use xxhash_rust::xxh3::xxh3_128;
 #[derive(Debug, Default)]
 pub struct Etag;
 
+/// Used to return an empty body when 304
+#[derive(Debug, Default)]
+pub struct NotModifiedResponse;
+
+impl MessageBody for NotModifiedResponse {
+    type Error = Infallible;
+
+    fn size(&self) -> BodySize {
+        BodySize::None
+    }
+
+    fn poll_next(
+        self: Pin<&mut Self>,
+        _cx: &mut Context<'_>,
+    ) -> Poll<Option<Result<Bytes, Self::Error>>> {
+        Poll::Ready(None)
+    }
+}
 impl<S, B> Transform<S, ServiceRequest> for Etag
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error>,
@@ -109,34 +129,36 @@ where
                         }
                         _ => body.boxed(),
                     });
-                    match payload {
-                        Some(bytes) => {
-                            let response_hash = xxh3_128(&bytes);
-                            let base64 = base64::prelude::BASE64_URL_SAFE
-                                .encode(response_hash.to_le_bytes());
-                            let mut buff = Buffer::new();
-                            let _ = write!(buff, "{:x}-{}", bytes.len(), base64);
-                            let tag = EntityTag::new_weak(buff.to_string());
-                            if let Some(request_etag_header) = request_etag_header {
-                                if request_etag_header == IfNoneMatch::Any
-                                    || request_etag_header.to_string() == tag.to_string()
-                                {
-                                    modified = false
-                                }
-                            }
-                            if modified {
-                                if let Ok((name, value)) = ETag(tag.clone()).try_into_pair() {
-                                    res.headers_mut().insert(name, value);
-                                }
+                    if let Some(bytes) = payload {
+                        let response_hash = xxh3_128(&bytes);
+                        let base64 =
+                            base64::prelude::BASE64_URL_SAFE.encode(response_hash.to_le_bytes());
+                        let mut buff = Buffer::new();
+                        let _ = write!(buff, "{:x}-{}", bytes.len(), base64);
+                        let tag = EntityTag::new_weak(buff.to_string());
+                        if let Some(request_etag_header) = request_etag_header {
+                            if request_etag_header == IfNoneMatch::Any
+                                || request_etag_header.to_string() == tag.to_string()
+                            {
+                                modified = false
                             }
                         }
-                        None => {}
+                        if modified {
+                            if let Ok((name, value)) = ETag(tag.clone()).try_into_pair() {
+                                res.headers_mut().insert(name, value);
+                            }
+                        }
                     }
 
                     Ok(match modified {
-                        false => res
-                            .into_response(HttpResponse::NotModified().finish())
-                            .map_into_right_body(),
+                        false => {
+                            
+                            res
+                                .into_response(
+                                    HttpResponse::NotModified().body(NotModifiedResponse),
+                                )
+                                .map_into_right_body()
+                        }
                         true => res.map_into_left_body(),
                     })
                 }
@@ -271,7 +293,7 @@ mod tests {
             .to_request();
         let res = call_service(&mut app, req).await;
         assert_eq!(res.status(), StatusCode::NOT_MODIFIED);
-        assert_eq!(res.into_body().size(), BodySize::Sized(0));
+        assert_eq!(res.into_body().size(), BodySize::None);
     }
 
     #[actix_web::test]
@@ -311,5 +333,27 @@ mod tests {
         let res = call_service(&mut app, req).await;
 
         assert_eq!(res.headers().get(ETag::name()), None)
+    }
+
+    #[actix_web::test]
+    async fn still_empty_body_when_compress_middleware_is_added() {
+        let mut app = init_service(
+            App::new()
+                .wrap(Etag)
+                .wrap(actix_web::middleware::Compress::default())
+                .route("/", web::get().to(image)),
+        )
+        .await;
+        let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak(
+            "3aee-m0RKLkLoLS6kJ1N8xt0D5A==".to_string(),
+        )]);
+        let req = TestRequest::default()
+            .append_header(match_header)
+            .append_header(("Accept-Encoding", "gzip"))
+            .to_request();
+        let res = call_service(&mut app, req).await;
+
+        assert_eq!(res.status(), StatusCode::NOT_MODIFIED);
+        assert_eq!(res.into_body().size(), BodySize::None);
     }
 }
