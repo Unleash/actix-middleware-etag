@@ -10,11 +10,11 @@ license = "MIT"
 
 [dependencies]
 actix-service = "2.0.2"
-actix-web = { version = "4.3.0", default-features = false }
-base64 = "0.21.0"
-futures = "0.3.24"
+actix-web = { version = "4.4.0", default-features = false }
+base64 = "0.21.5"
+futures = "0.3.29"
 str-buf = "3.0.2"
 xxhash-rust = { version = "0.8.6", features = ["xxh3"] }
 
 [dev-dependencies]
-actix-web = { version = "4.3.0", default-features = false, features = ["macros"] }
+actix-web = { version = "4.4.0", default-features = false, features = ["macros", "compress-gzip", "compress-zstd"] }

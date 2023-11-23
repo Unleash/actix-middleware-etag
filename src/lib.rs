@@ -22,7 +22,7 @@ use actix_web::http::Method;
 use actix_web::web::Bytes;
 use actix_web::{HttpMessage, HttpResponse};
 use base64::Engine;
-use core::fmt::{Write};
+use core::fmt::Write;
 use futures::{
     future::{ok, Ready},
     Future,
@@ -311,5 +311,27 @@ mod tests {
         let res = call_service(&mut app, req).await;
 
         assert_eq!(res.headers().get(ETag::name()), None)
+    }
+
+    #[actix_web::test]
+    async fn still_empty_body_when_compress_middleware_is_added() {
+        let mut app = init_service(
+            App::new()
+                .wrap(Etag)
+                .wrap(actix_web::middleware::Compress::default())
+                .route("/", web::get().to(image)),
+        )
+        .await;
+        let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak(
+            "3aee-m0RKLkLoLS6kJ1N8xt0D5A==".to_string(),
+        )]);
+        let req = TestRequest::default()
+            .append_header(match_header)
+            .append_header(("Accept-Encoding", "gzip"))
+            .to_request();
+        let res = call_service(&mut app, req).await;
+
+        assert_eq!(res.status(), StatusCode::NOT_MODIFIED);
+        assert_eq!(res.into_body().size(), BodySize::None);
     }
 }
