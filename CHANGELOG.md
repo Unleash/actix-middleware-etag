@@ -5,7 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.3.0 (2023-11-23)
+
+### Chore
+
+ - <csr-id-864504de94e17b5c1f48e86ffa6ffda3f3703012/> Ready for release
+ - <csr-id-706fc83a66682004709d164ed10b3ad0407a34c3/> remove unused import
+
+### Bug Fixes
+
+ - <csr-id-c93f9768d71bdd4a967cc02f68eec816833d607b/> use None body instead of empty
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 3 commits contributed to the release.
+ - 295 days passed between releases.
+ - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 1 unique issue was worked on: [#2](https://github.com/chriswk/actix-middleware-etag/issues/2)
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **[#2](https://github.com/chriswk/actix-middleware-etag/issues/2)**
+    - Use None body instead of empty ([`c93f976`](https://github.com/chriswk/actix-middleware-etag/commit/c93f9768d71bdd4a967cc02f68eec816833d607b))
+ * **Uncategorized**
+    - Ready for release ([`864504d`](https://github.com/chriswk/actix-middleware-etag/commit/864504de94e17b5c1f48e86ffa6ffda3f3703012))
+    - Remove unused import ([`706fc83`](https://github.com/chriswk/actix-middleware-etag/commit/706fc83a66682004709d164ed10b3ad0407a34c3))
+</details>
+
 ## v0.2.0 (2023-02-01)
+
+<csr-id-ace591e23b0ee4b31054090bd15aa2782d1e2cbf/>
 
 ### Chore
 
@@ -19,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 3 commits contributed to the release.
+ - 4 commits contributed to the release.
  - 125 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -31,9 +66,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release actix-middleware-etag v0.2.0 ([`ad14cc8`](https://github.com/chriswk/actix-middleware-etag/commit/ad14cc81231fb5a846d71b2a256b927bef8c6467))
     - Added changelog ([`ace591e`](https://github.com/chriswk/actix-middleware-etag/commit/ace591e23b0ee4b31054090bd15aa2782d1e2cbf))
     - Release actix-middleware-etag v0.2.0 ([`7dc14e6`](https://github.com/chriswk/actix-middleware-etag/commit/7dc14e68c542dba9b83588707afa4780aadd5c71))
-    - now includes content length in etag ([`fe10145`](https://github.com/chriswk/actix-middleware-etag/commit/fe10145fa730d9c45deb7e05c594ad5760b9761a))
+    - Now includes content length in etag ([`fe10145`](https://github.com/chriswk/actix-middleware-etag/commit/fe10145fa730d9c45deb7e05c594ad5760b9761a))
 </details>
 
 ## v0.1.1 (2022-09-29)
