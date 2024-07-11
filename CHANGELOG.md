@@ -5,7 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.4.0 (2024-07-11)
+
+### Other
+
+ - <csr-id-f1ffaad020060379377ed6bdf05eeaab5a5d0a15/> Bumped dependencies to 4.8 of actix
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 1 commit contributed to the release.
+ - 230 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Bumped dependencies to 4.8 of actix ([`f1ffaad`](https://github.com/chriswk/actix-middleware-etag/commit/f1ffaad020060379377ed6bdf05eeaab5a5d0a15))
+</details>
+
 ## v0.3.0 (2023-11-23)
+
+<csr-id-864504de94e17b5c1f48e86ffa6ffda3f3703012/>
+<csr-id-706fc83a66682004709d164ed10b3ad0407a34c3/>
 
 ### Chore
 
@@ -20,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 3 commits contributed to the release.
+ - 4 commits contributed to the release.
  - 295 days passed between releases.
  - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 1 unique issue was worked on: [#2](https://github.com/chriswk/actix-middleware-etag/issues/2)
@@ -34,6 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  * **[#2](https://github.com/chriswk/actix-middleware-etag/issues/2)**
     - Use None body instead of empty ([`c93f976`](https://github.com/chriswk/actix-middleware-etag/commit/c93f9768d71bdd4a967cc02f68eec816833d607b))
  * **Uncategorized**
+    - Release actix-middleware-etag v0.3.0 ([`f42be50`](https://github.com/chriswk/actix-middleware-etag/commit/f42be50440883bb0620955f2a2f25dffd09c124c))
     - Ready for release ([`864504d`](https://github.com/chriswk/actix-middleware-etag/commit/864504de94e17b5c1f48e86ffa6ffda3f3703012))
     - Remove unused import ([`706fc83`](https://github.com/chriswk/actix-middleware-etag/commit/706fc83a66682004709d164ed10b3ad0407a34c3))
 </details>
