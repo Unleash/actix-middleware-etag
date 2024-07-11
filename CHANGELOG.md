@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.4.1 (2024-07-11)
+
+### Bug Fixes
+
+ - <csr-id-3fb91b7a78413cd2e3565ce33549cd628f97cd9f/> Added license file
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Release actix-middleware-etag v0.4.0 ([`ca77b11`](https://github.com/chriswk/actix-middleware-etag/commit/ca77b11088997da08990b27605ca7b92378a3fdf))
+    - Added license file ([`3fb91b7`](https://github.com/chriswk/actix-middleware-etag/commit/3fb91b7a78413cd2e3565ce33549cd628f97cd9f))
+</details>
+
 ## v0.4.0 (2024-07-11)
 
 <csr-id-f1ffaad020060379377ed6bdf05eeaab5a5d0a15/>
@@ -21,7 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 1 commit contributed to the release.
+ - 2 commits contributed to the release.
+ - 230 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -32,7 +58,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
-    - Added license file ([`3fb91b7`](https://github.com/chriswk/actix-middleware-etag/commit/3fb91b7a78413cd2e3565ce33549cd628f97cd9f))
+    - Release actix-middleware-etag v0.4.0 ([`194bf91`](https://github.com/chriswk/actix-middleware-etag/commit/194bf919ce052fae8260cfe8c7b088e75c941eec))
+    - Bumped dependencies to 4.8 of actix ([`f1ffaad`](https://github.com/chriswk/actix-middleware-etag/commit/f1ffaad020060379377ed6bdf05eeaab5a5d0a15))
 </details>
 
 ## v0.3.0 (2023-11-23)
