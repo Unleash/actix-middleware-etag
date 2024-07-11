@@ -7,16 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.4.0 (2024-07-11)
 
+<csr-id-f1ffaad020060379377ed6bdf05eeaab5a5d0a15/>
+
 ### Other
 
  - <csr-id-f1ffaad020060379377ed6bdf05eeaab5a5d0a15/> Bumped dependencies to 4.8 of actix
+
+### Bug Fixes
+
+ - <csr-id-3fb91b7a78413cd2e3565ce33549cd628f97cd9f/> Added license file
 
 ### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
  - 1 commit contributed to the release.
- - 230 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -27,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
-    - Bumped dependencies to 4.8 of actix ([`f1ffaad`](https://github.com/chriswk/actix-middleware-etag/commit/f1ffaad020060379377ed6bdf05eeaab5a5d0a15))
+    - Added license file ([`3fb91b7`](https://github.com/chriswk/actix-middleware-etag/commit/3fb91b7a78413cd2e3565ce33549cd628f97cd9f))
 </details>
 
 ## v0.3.0 (2023-11-23)
