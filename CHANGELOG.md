@@ -5,17 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v0.4.1 (2024-07-11)
+## v0.4.2 (2024-09-03)
 
-### Bug Fixes
+### Chore
 
- - <csr-id-3fb91b7a78413cd2e3565ce33549cd628f97cd9f/> Added license file
+ - <csr-id-6c73e2e23aa0120fd775b112cf664451fd40f21b/> Bump to actix 4.9.0
 
 ### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 2 commits contributed to the release.
+ - 1 commit contributed to the release.
+ - 53 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -26,6 +27,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Bump to actix 4.9.0 ([`6c73e2e`](https://github.com/chriswk/actix-middleware-etag/commit/6c73e2e23aa0120fd775b112cf664451fd40f21b))
+</details>
+
+## v0.4.1 (2024-07-11)
+
+### Bug Fixes
+
+ - <csr-id-3fb91b7a78413cd2e3565ce33549cd628f97cd9f/> Added license file
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 3 commits contributed to the release.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Release actix-middleware-etag v0.4.1 ([`3720ea7`](https://github.com/chriswk/actix-middleware-etag/commit/3720ea7765521642e704b3c591ac6ab72d9e8c77))
     - Release actix-middleware-etag v0.4.0 ([`ca77b11`](https://github.com/chriswk/actix-middleware-etag/commit/ca77b11088997da08990b27605ca7b92378a3fdf))
     - Added license file ([`3fb91b7`](https://github.com/chriswk/actix-middleware-etag/commit/3fb91b7a78413cd2e3565ce33549cd628f97cd9f))
 </details>
@@ -47,7 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <csr-read-only-do-not-edit/>
 
  - 2 commits contributed to the release.
- - 230 days passed between releases.
+ - 231 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -139,7 +165,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 13 commits contributed to the release over the course of 11 calendar days.
+ - 13 commits contributed to the release.
  - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
