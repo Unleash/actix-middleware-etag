@@ -109,28 +109,25 @@ where
                         }
                         _ => body.boxed(),
                     });
-                    match payload {
-                        Some(bytes) => {
-                            let response_hash = xxh3_128(&bytes);
-                            let base64 = base64::prelude::BASE64_URL_SAFE
-                                .encode(response_hash.to_le_bytes());
-                            let mut buff = Buffer::new();
-                            let _ = write!(buff, "{:x}-{}", bytes.len(), base64);
-                            let tag = EntityTag::new_weak(buff.to_string());
-                            if let Some(request_etag_header) = request_etag_header {
-                                if request_etag_header == IfNoneMatch::Any
-                                    || request_etag_header.to_string() == tag.to_string()
-                                {
-                                    modified = false
-                                }
-                            }
-                            if modified {
-                                if let Ok((name, value)) = ETag(tag.clone()).try_into_pair() {
-                                    res.headers_mut().insert(name, value);
-                                }
+                    if let Some(bytes) = payload {
+                        let response_hash = xxh3_128(&bytes);
+                        let base64 =
+                            base64::prelude::BASE64_URL_SAFE.encode(response_hash.to_le_bytes());
+                        let mut buff = Buffer::new();
+                        let _ = write!(buff, "{:x}-{}", bytes.len(), base64);
+                        let tag = EntityTag::new_weak(buff.to_string());
+                        if let Some(request_etag_header) = request_etag_header {
+                            if request_etag_header == IfNoneMatch::Any
+                                || request_etag_header.to_string() == tag.to_string()
+                            {
+                                modified = false
                             }
                         }
-                        None => {}
+                        if modified {
+                            if let Ok((name, value)) = ETag(tag.clone()).try_into_pair() {
+                                res.headers_mut().insert(name, value);
+                            }
+                        }
                     }
 
                     Ok(match modified {
@@ -174,7 +171,7 @@ mod tests {
         let srv = |req: ServiceRequest| {
             ok(req.into_response(HttpResponse::build(StatusCode::OK).body("abc")))
         };
-        let etag_service = Etag::default();
+        let etag_service = Etag;
         let srv = etag_service
             .new_transform(srv.into_service())
             .await
@@ -198,12 +195,7 @@ mod tests {
 
     #[actix_web::test]
     async fn test_any_data_matches_wildcard_etag() {
-        let mut app = init_service(
-            App::new()
-                .wrap(Etag::default())
-                .route("/", web::get().to(index)),
-        )
-        .await;
+        let mut app = init_service(App::new().wrap(Etag).route("/", web::get().to(index))).await;
 
         let match_header = IfNoneMatch::Any;
         let req = TestRequest::default()
@@ -215,12 +207,7 @@ mod tests {
 
     #[actix_web::test]
     async fn test_generates_etag_on_changes() {
-        let mut app = init_service(
-            App::new()
-                .wrap(Etag::default())
-                .route("/", web::get().to(index)),
-        )
-        .await;
+        let mut app = init_service(App::new().wrap(Etag).route("/", web::get().to(index))).await;
         let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak(
             "3-UDkviZRfr3iFYTpztlqwBg==".to_string(),
         )]);
@@ -235,12 +222,7 @@ mod tests {
 
     #[actix_web::test]
     async fn test_body_gets_preserved() {
-        let mut app = init_service(
-            App::new()
-                .wrap(Etag::default())
-                .route("/", web::get().to(index)),
-        )
-        .await;
+        let mut app = init_service(App::new().wrap(Etag).route("/", web::get().to(index))).await;
         let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak(
             "UDkviZRfr3iFYTpztlqwBg==".to_string(),
         )]);
@@ -257,12 +239,7 @@ mod tests {
 
     #[actix_web::test]
     async fn test_favicon_generates_correct_status_coded_on_etag_match() {
-        let mut app = init_service(
-            App::new()
-                .wrap(Etag::default())
-                .route("/", web::get().to(image)),
-        )
-        .await;
+        let mut app = init_service(App::new().wrap(Etag).route("/", web::get().to(image))).await;
         let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak(
             "3aee-m0RKLkLoLS6kJ1N8xt0D5A==".to_string(),
         )]);
@@ -276,12 +253,7 @@ mod tests {
 
     #[actix_web::test]
     async fn test_favicon_data_works() {
-        let mut app = init_service(
-            App::new()
-                .wrap(Etag::default())
-                .route("/", web::get().to(image)),
-        )
-        .await;
+        let mut app = init_service(App::new().wrap(Etag).route("/", web::get().to(image))).await;
 
         let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak(
             "UDkviZRfr3iFYTpztlqwBg==".to_string(),
@@ -300,12 +272,7 @@ mod tests {
 
     #[actix_web::test]
     async fn does_not_add_etag_header_to_post_request() {
-        let mut app = init_service(
-            App::new()
-                .wrap(Etag::default())
-                .route("/", web::post().to(image)),
-        )
-        .await;
+        let mut app = init_service(App::new().wrap(Etag).route("/", web::post().to(image))).await;
 
         let req = TestRequest::default().method(Method::POST).to_request();
         let res = call_service(&mut app, req).await;
