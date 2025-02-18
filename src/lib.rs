@@ -17,7 +17,7 @@ use std::pin::Pin;
 use actix_service::{forward_ready, Service, Transform};
 use actix_web::body::{BodySize, BoxBody, EitherBody, MessageBody, None as BodyNone};
 use actix_web::dev::{ServiceRequest, ServiceResponse};
-use actix_web::http::header::{ETag, EntityTag, IfNoneMatch, TryIntoHeaderPair, Header};
+use actix_web::http::header::{ETag, EntityTag, Header, IfNoneMatch, TryIntoHeaderPair};
 use actix_web::http::Method;
 use actix_web::web::Bytes;
 use actix_web::{HttpMessage, HttpResponse};
@@ -55,10 +55,10 @@ use xxhash_rust::xxh3::xxh3_128;
 pub struct Etag;
 
 impl<S, B> Transform<S, ServiceRequest> for Etag
-    where
-        S: Service<ServiceRequest, Response=ServiceResponse<B>, Error=actix_web::Error>,
-        S::Future: 'static,
-        B: MessageBody + 'static,
+where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error>,
+    S::Future: 'static,
+    B: MessageBody + 'static,
 {
     type Response = ServiceResponse<EitherBody<BoxBody>>;
     type Error = actix_web::Error;
@@ -80,16 +80,16 @@ pub struct EtagMiddleware<S> {
 }
 
 impl<S, B> Service<ServiceRequest> for EtagMiddleware<S>
-    where
-        S: Service<ServiceRequest, Response=ServiceResponse<B>, Error=actix_web::Error>,
-        S::Future: 'static,
-        B: MessageBody + 'static,
+where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = actix_web::Error>,
+    S::Future: 'static,
+    B: MessageBody + 'static,
 {
     type Response = ServiceResponse<EitherBody<BoxBody>>;
     type Error = actix_web::Error;
     #[allow(clippy::type_complexity)]
     type Future =
-    Pin<Box<dyn Future<Output=Result<ServiceResponse<EitherBody<BoxBody>>, Self::Error>>>>;
+        Pin<Box<dyn Future<Output = Result<ServiceResponse<EitherBody<BoxBody>>, Self::Error>>>>;
     forward_ready!(service);
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
@@ -118,7 +118,8 @@ impl<S, B> Service<ServiceRequest> for EtagMiddleware<S>
                             Some(custom_etag) => EntityTag::new_weak(custom_etag.to_owned()),
                             None => {
                                 let response_hash = xxh3_128(&bytes);
-                                let base64 = base64::prelude::BASE64_URL_SAFE.encode(response_hash.to_le_bytes());
+                                let base64 = base64::prelude::BASE64_URL_SAFE
+                                    .encode(response_hash.to_le_bytes());
                                 let mut buff = Buffer::new();
                                 let _ = write!(buff, "{:x}-{}", bytes.len(), base64);
                                 EntityTag::new_weak(buff.to_string())
@@ -297,7 +298,7 @@ mod tests {
                 .wrap(actix_web::middleware::Compress::default())
                 .route("/", web::get().to(image)),
         )
-            .await;
+        .await;
         let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak(
             "3aee-m0RKLkLoLS6kJ1N8xt0D5A==".to_string(),
         )]);
@@ -313,20 +314,20 @@ mod tests {
 
     #[actix_web::test]
     async fn test_explicit_etag_matches_if_none_match() {
-        let mut app = init_service(
-            App::new()
-                .wrap(Etag)
-                .route("/", web::get().to(|| async {
-                    HttpResponse::Ok()
-                        .insert_header((ETag::name(), "custometag"))
-                        .body("Response with a custom ETag")
-                }))
-        ).await;
-        let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak(
-            "custometag".to_string(),
-        )]);
+        let mut app = init_service(App::new().wrap(Etag).route(
+            "/",
+            web::get().to(|| async {
+                HttpResponse::Ok()
+                    .insert_header((ETag::name(), "custometag"))
+                    .body("Response with a custom ETag")
+            }),
+        ))
+        .await;
+        let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak("custometag".to_string())]);
 
-        let req = TestRequest::default().append_header(match_header).to_request();
+        let req = TestRequest::default()
+            .append_header(match_header)
+            .to_request();
         let res = call_service(&mut app, req).await;
 
         assert_eq!(res.status(), StatusCode::NOT_MODIFIED);
