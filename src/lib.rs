@@ -70,9 +70,7 @@ where
         ok(EtagMiddleware { service })
     }
 }
-
 type Buffer = str_buf::StrBuf<62>;
-
 ///
 /// The service holder for the transform that should happen
 pub struct EtagMiddleware<S> {
@@ -96,7 +94,6 @@ where
         let request_etag_header: Option<IfNoneMatch> = req.get_header();
         let method = req.method().clone();
         let fut = self.service.call(req);
-
         Box::pin(async move {
             let res: ServiceResponse<B> = fut.await?;
 
