@@ -333,4 +333,25 @@ mod tests {
         assert_eq!(res.status(), StatusCode::NOT_MODIFIED);
         assert_eq!(res.into_body().size(), BodySize::None);
     }
+
+    #[actix_web::test]
+    async fn test_explicit_etag_does_not_match_if_none_match() {
+        let mut app = init_service(App::new().wrap(Etag).route(
+            "/",
+            web::get().to(|| async {
+                HttpResponse::Ok()
+                    .insert_header((ETag::name(), "custometag"))
+                    .body("Response with a custom ETag")
+            }),
+        ))
+            .await;
+        let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak("another_custometag".to_string())]);
+
+        let req = TestRequest::default()
+            .append_header(match_header)
+            .to_request();
+        let res = call_service(&mut app, req).await;
+
+        assert_eq!(res.status(), StatusCode::OK);
+    }
 }
