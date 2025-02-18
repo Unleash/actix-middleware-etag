@@ -96,7 +96,6 @@ where
         let fut = self.service.call(req);
         Box::pin(async move {
             let res: ServiceResponse<B> = fut.await?;
-
             match method {
                 Method::GET => {
                     let mut modified = true;
