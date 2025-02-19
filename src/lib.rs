@@ -17,7 +17,7 @@ use std::pin::Pin;
 use actix_service::{forward_ready, Service, Transform};
 use actix_web::body::{BodySize, BoxBody, EitherBody, MessageBody, None as BodyNone};
 use actix_web::dev::{ServiceRequest, ServiceResponse};
-use actix_web::http::header::{ETag, EntityTag, IfNoneMatch, TryIntoHeaderPair};
+use actix_web::http::header::{ETag, EntityTag, Header, IfNoneMatch, TryIntoHeaderPair};
 use actix_web::http::Method;
 use actix_web::web::Bytes;
 use actix_web::{HttpMessage, HttpResponse};
@@ -94,7 +94,6 @@ where
         let request_etag_header: Option<IfNoneMatch> = req.get_header();
         let method = req.method().clone();
         let fut = self.service.call(req);
-
         Box::pin(async move {
             let res: ServiceResponse<B> = fut.await?;
             match method {
@@ -110,12 +109,19 @@ where
                         _ => body.boxed(),
                     });
                     if let Some(bytes) = payload {
-                        let response_hash = xxh3_128(&bytes);
-                        let base64 =
-                            base64::prelude::BASE64_URL_SAFE.encode(response_hash.to_le_bytes());
-                        let mut buff = Buffer::new();
-                        let _ = write!(buff, "{:x}-{}", bytes.len(), base64);
-                        let tag = EntityTag::new_weak(buff.to_string());
+                        let custom_etag = res.response().headers().get(ETag::name());
+                        let tag = match custom_etag.and_then(|etag| etag.to_str().ok()) {
+                            Some(custom_etag) => EntityTag::new_weak(custom_etag.to_owned()),
+                            None => {
+                                let response_hash = xxh3_128(&bytes);
+                                let base64 = base64::prelude::BASE64_URL_SAFE
+                                    .encode(response_hash.to_le_bytes());
+                                let mut buff = Buffer::new();
+                                let _ = write!(buff, "{:x}-{}", bytes.len(), base64);
+                                EntityTag::new_weak(buff.to_string())
+                            }
+                        };
+
                         if let Some(request_etag_header) = request_etag_header {
                             if request_etag_header == IfNoneMatch::Any
                                 || request_etag_header.to_string() == tag.to_string()
@@ -300,5 +306,48 @@ mod tests {
 
         assert_eq!(res.status(), StatusCode::NOT_MODIFIED);
         assert_eq!(res.into_body().size(), BodySize::None);
+    }
+
+    #[actix_web::test]
+    async fn test_explicit_etag_matches_if_none_match() {
+        let mut app = init_service(App::new().wrap(Etag).route(
+            "/",
+            web::get().to(|| async {
+                HttpResponse::Ok()
+                    .insert_header((ETag::name(), "custometag"))
+                    .body("Response with a custom ETag")
+            }),
+        ))
+        .await;
+        let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak("custometag".to_string())]);
+
+        let req = TestRequest::default()
+            .append_header(match_header)
+            .to_request();
+        let res = call_service(&mut app, req).await;
+
+        assert_eq!(res.status(), StatusCode::NOT_MODIFIED);
+        assert_eq!(res.into_body().size(), BodySize::None);
+    }
+
+    #[actix_web::test]
+    async fn test_explicit_etag_does_not_match_if_none_match() {
+        let mut app = init_service(App::new().wrap(Etag).route(
+            "/",
+            web::get().to(|| async {
+                HttpResponse::Ok()
+                    .insert_header((ETag::name(), "custometag"))
+                    .body("Response with a custom ETag")
+            }),
+        ))
+            .await;
+        let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak("another_custometag".to_string())]);
+
+        let req = TestRequest::default()
+            .append_header(match_header)
+            .to_request();
+        let res = call_service(&mut app, req).await;
+
+        assert_eq!(res.status(), StatusCode::OK);
     }
 }
