@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.3](https://github.com/Unleash/actix-middleware-etag/compare/v0.4.2...v0.4.3) - 2025-02-19
+
+### 🚀 Features
+- respect custom etag (#6) (by @kwasniew) - #6
+
+### 💼 Other
+- move to release-plz for release workflow (#4) (by @chriswk) - #4
+
+### Contributors
+
+* @kwasniew
+* @chriswk
+
 ## v0.4.2 (2024-09-03)
 
 ### Chore
