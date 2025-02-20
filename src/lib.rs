@@ -111,7 +111,7 @@ where
                     if let Some(bytes) = payload {
                         let custom_etag = res.response().headers().get(ETag::name());
                         let tag = match custom_etag.and_then(|etag| etag.to_str().ok()) {
-                            Some(custom_etag) => EntityTag::new_weak(custom_etag.to_owned()),
+                            Some(custom_etag) => EntityTag::new_strong(custom_etag.to_owned()),
                             None => {
                                 let response_hash = xxh3_128(&bytes);
                                 let base64 = base64::prelude::BASE64_URL_SAFE
@@ -314,12 +314,12 @@ mod tests {
             "/",
             web::get().to(|| async {
                 HttpResponse::Ok()
-                    .insert_header((ETag::name(), "custometag"))
+                    .insert_header((ETag::name(), "123"))
                     .body("Response with a custom ETag")
             }),
         ))
         .await;
-        let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak("custometag".to_string())]);
+        let match_header = IfNoneMatch::Items(vec![EntityTag::new_strong("123".to_string())]);
 
         let req = TestRequest::default()
             .append_header(match_header)
@@ -336,18 +336,21 @@ mod tests {
             "/",
             web::get().to(|| async {
                 HttpResponse::Ok()
-                    .insert_header((ETag::name(), "custometag"))
+                    .insert_header((ETag::name(), "123"))
                     .body("Response with a custom ETag")
             }),
         ))
-            .await;
-        let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak("another_custometag".to_string())]);
+        .await;
+        let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak("124".to_string())]);
 
         let req = TestRequest::default()
             .append_header(match_header)
             .to_request();
         let res = call_service(&mut app, req).await;
 
+        let etag_header = res.headers().get(ETag::name()).unwrap();
+
         assert_eq!(res.status(), StatusCode::OK);
+        assert_eq!(etag_header.to_str().unwrap(), "\"123\"");
     }
 }
