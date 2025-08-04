@@ -53,7 +53,8 @@ use xxhash_rust::xxh3::xxh3_128;
 /// ```
 #[derive(Debug, Default)]
 pub struct Etag {
-    force_strong_etag: bool,
+    /// If true, always generate a strong ETag instead of a weak one.
+    pub force_strong_etag: bool,
 }
 
 impl<S, B> Transform<S, ServiceRequest> for Etag
