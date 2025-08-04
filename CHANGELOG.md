@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.4.5](https://github.com/Unleash/actix-middleware-etag/compare/v0.4.4...v0.4.5) - 2025-08-04
+
+### 🚀 Features
+- add an override for generating strong etags ([#14](https://github.com/unleash/actix-middleware-etag/issues/14)) (by @sighphyre) - #14
+
+### Dependency updates
+- bump actix-service from 2.0.2 to 2.0.3 ([#9](https://github.com/unleash/actix-middleware-etag/issues/9)) (by @dependabot[bot]) - #9
+- bump actions/create-github-app-token from 1 to 2 ([#11](https://github.com/unleash/actix-middleware-etag/issues/11)) (by @dependabot[bot]) - #11
+- bump actix-web from 4.9.0 to 4.11.0 ([#13](https://github.com/unleash/actix-middleware-etag/issues/13)) (by @dependabot[bot]) - #13
+
+### Contributors
+
+* @dependabot[bot]
+* @sighphyre
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
 ## [0.4.4](https://github.com/Unleash/actix-middleware-etag/compare/v0.4.3...v0.4.4) - 2025-02-20
 
 ### 🚀 Features
