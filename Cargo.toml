@@ -9,7 +9,7 @@ authors = ["Christopher Kolstad <rust@chriswk.no>"]
 license = "MIT"
 
 [dependencies]
-actix-service = "2.0.2"
+actix-service = "2.0.3"
 actix-web = { version = "4.11.0", default-features = false }
 base64 = "0.22.1"
 futures = "0.3.31"
