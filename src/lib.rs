@@ -53,7 +53,8 @@ use xxhash_rust::xxh3::xxh3_128;
 /// ```
 #[derive(Debug, Default)]
 pub struct Etag {
-    force_strong_etag: bool,
+    /// If true, always generate a strong ETag instead of a weak one.
+    pub force_strong_etag: bool,
 }
 
 impl<S, B> Transform<S, ServiceRequest> for Etag
@@ -400,7 +401,7 @@ mod tests {
         let srv = |req: ServiceRequest| {
             ok(req.into_response(HttpResponse::build(StatusCode::OK).body("abc")))
         };
-        let etag_service = Etag{
+        let etag_service = Etag {
             force_strong_etag: true,
         };
         let srv = etag_service
