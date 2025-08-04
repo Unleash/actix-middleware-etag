@@ -52,7 +52,9 @@ use xxhash_rust::xxh3::xxh3_128;
 /// }
 /// ```
 #[derive(Debug, Default)]
-pub struct Etag;
+pub struct Etag {
+    force_strong_etag: bool,
+}
 
 impl<S, B> Transform<S, ServiceRequest> for Etag
 where
@@ -67,7 +69,10 @@ where
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        ok(EtagMiddleware { service })
+        ok(EtagMiddleware {
+            service,
+            force_strong_etag: self.force_strong_etag,
+        })
     }
 }
 type Buffer = str_buf::StrBuf<62>;
@@ -75,6 +80,7 @@ type Buffer = str_buf::StrBuf<62>;
 /// The service holder for the transform that should happen
 pub struct EtagMiddleware<S> {
     service: S,
+    force_strong_etag: bool,
 }
 
 impl<S, B> Service<ServiceRequest> for EtagMiddleware<S>
@@ -94,6 +100,7 @@ where
         let request_etag_header: Option<IfNoneMatch> = req.get_header();
         let method = req.method().clone();
         let fut = self.service.call(req);
+        let force_strong_etag = self.force_strong_etag;
         Box::pin(async move {
             let res: ServiceResponse<B> = fut.await?;
             match method {
@@ -118,7 +125,11 @@ where
                                     .encode(response_hash.to_le_bytes());
                                 let mut buff = Buffer::new();
                                 let _ = write!(buff, "{:x}-{}", bytes.len(), base64);
-                                EntityTag::new_weak(buff.to_string())
+                                if force_strong_etag {
+                                    EntityTag::new_strong(buff.to_string())
+                                } else {
+                                    EntityTag::new_weak(buff.to_string())
+                                }
                             }
                         };
 
@@ -177,7 +188,7 @@ mod tests {
         let srv = |req: ServiceRequest| {
             ok(req.into_response(HttpResponse::build(StatusCode::OK).body("abc")))
         };
-        let etag_service = Etag;
+        let etag_service = Etag::default();
         let srv = etag_service
             .new_transform(srv.into_service())
             .await
@@ -201,7 +212,12 @@ mod tests {
 
     #[actix_web::test]
     async fn test_any_data_matches_wildcard_etag() {
-        let mut app = init_service(App::new().wrap(Etag).route("/", web::get().to(index))).await;
+        let mut app = init_service(
+            App::new()
+                .wrap(Etag::default())
+                .route("/", web::get().to(index)),
+        )
+        .await;
 
         let match_header = IfNoneMatch::Any;
         let req = TestRequest::default()
@@ -213,7 +229,12 @@ mod tests {
 
     #[actix_web::test]
     async fn test_generates_etag_on_changes() {
-        let mut app = init_service(App::new().wrap(Etag).route("/", web::get().to(index))).await;
+        let mut app = init_service(
+            App::new()
+                .wrap(Etag::default())
+                .route("/", web::get().to(index)),
+        )
+        .await;
         let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak(
             "3-UDkviZRfr3iFYTpztlqwBg==".to_string(),
         )]);
@@ -228,7 +249,12 @@ mod tests {
 
     #[actix_web::test]
     async fn test_body_gets_preserved() {
-        let mut app = init_service(App::new().wrap(Etag).route("/", web::get().to(index))).await;
+        let mut app = init_service(
+            App::new()
+                .wrap(Etag::default())
+                .route("/", web::get().to(index)),
+        )
+        .await;
         let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak(
             "UDkviZRfr3iFYTpztlqwBg==".to_string(),
         )]);
@@ -245,7 +271,12 @@ mod tests {
 
     #[actix_web::test]
     async fn test_favicon_generates_correct_status_coded_on_etag_match() {
-        let mut app = init_service(App::new().wrap(Etag).route("/", web::get().to(image))).await;
+        let mut app = init_service(
+            App::new()
+                .wrap(Etag::default())
+                .route("/", web::get().to(image)),
+        )
+        .await;
         let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak(
             "3aee-m0RKLkLoLS6kJ1N8xt0D5A==".to_string(),
         )]);
@@ -259,7 +290,12 @@ mod tests {
 
     #[actix_web::test]
     async fn test_favicon_data_works() {
-        let mut app = init_service(App::new().wrap(Etag).route("/", web::get().to(image))).await;
+        let mut app = init_service(
+            App::new()
+                .wrap(Etag::default())
+                .route("/", web::get().to(image)),
+        )
+        .await;
 
         let match_header = IfNoneMatch::Items(vec![EntityTag::new_weak(
             "UDkviZRfr3iFYTpztlqwBg==".to_string(),
@@ -278,7 +314,12 @@ mod tests {
 
     #[actix_web::test]
     async fn does_not_add_etag_header_to_post_request() {
-        let mut app = init_service(App::new().wrap(Etag).route("/", web::post().to(image))).await;
+        let mut app = init_service(
+            App::new()
+                .wrap(Etag::default())
+                .route("/", web::post().to(image)),
+        )
+        .await;
 
         let req = TestRequest::default().method(Method::POST).to_request();
         let res = call_service(&mut app, req).await;
@@ -290,7 +331,7 @@ mod tests {
     async fn still_empty_body_when_compress_middleware_is_added() {
         let mut app = init_service(
             App::new()
-                .wrap(Etag)
+                .wrap(Etag::default())
                 .wrap(actix_web::middleware::Compress::default())
                 .route("/", web::get().to(image)),
         )
@@ -310,7 +351,7 @@ mod tests {
 
     #[actix_web::test]
     async fn test_explicit_etag_matches_if_none_match() {
-        let mut app = init_service(App::new().wrap(Etag).route(
+        let mut app = init_service(App::new().wrap(Etag::default()).route(
             "/",
             web::get().to(|| async {
                 HttpResponse::Ok()
@@ -332,7 +373,7 @@ mod tests {
 
     #[actix_web::test]
     async fn test_explicit_etag_does_not_match_if_none_match() {
-        let mut app = init_service(App::new().wrap(Etag).route(
+        let mut app = init_service(App::new().wrap(Etag::default()).route(
             "/",
             web::get().to(|| async {
                 HttpResponse::Ok()
@@ -352,5 +393,34 @@ mod tests {
 
         assert_eq!(res.status(), StatusCode::OK);
         assert_eq!(etag_header.to_str().unwrap(), "\"123\"");
+    }
+
+    #[actix_web::test]
+    async fn test_force_strong_etag() {
+        let srv = |req: ServiceRequest| {
+            ok(req.into_response(HttpResponse::build(StatusCode::OK).body("abc")))
+        };
+        let etag_service = Etag{
+            force_strong_etag: true,
+        };
+        let srv = etag_service
+            .new_transform(srv.into_service())
+            .await
+            .unwrap();
+
+        let req = TestRequest::default().to_srv_request();
+        let res = srv.call(req).await;
+        if let Ok(response) = res {
+            assert_eq!(response.status(), StatusCode::OK);
+            let headers = response.headers();
+            let etag = HeaderName::from_lowercase(b"etag").unwrap();
+            let etag = headers.get(etag);
+            assert_eq!(
+                etag.unwrap().to_str().unwrap(),
+                r#""3-UDkviZRfr3iFYTpztlqwBg==""#
+            );
+        } else {
+            panic!("No response was generated!");
+        }
     }
 }
