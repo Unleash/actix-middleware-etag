@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.6](https://github.com/Unleash/actix-middleware-etag/compare/v0.4.5...v0.4.6) - 2025-08-04
+
+### 🚀 Features
+- expose a way to enable forced strong etags ([#17](https://github.com/unleash/actix-middleware-etag/issues/17)) (by @sighphyre) - #17
+
+### Contributors
+
+* @sighphyre
+
 ## [0.4.5](https://github.com/Unleash/actix-middleware-etag/compare/v0.4.4...v0.4.5) - 2025-08-04
 
 ### 🚀 Features
