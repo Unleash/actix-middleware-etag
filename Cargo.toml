@@ -13,7 +13,7 @@ actix-service = "2.0.3"
 actix-web = { version = "4.11.0", default-features = false }
 base64 = "0.22.1"
 futures = "0.3.31"
-str-buf = "3.0.3"
+str-buf = "4.0.0"
 xxhash-rust = { version = "0.8.15", features = ["xxh3"] }
 
 [dev-dependencies]
